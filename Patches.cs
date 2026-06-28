@@ -2,7 +2,7 @@
 using System.Linq;
 using UnityEngine;
 
-namespace BoatDamageFix
+namespace ShipShape
 {
     internal class Patches
     {

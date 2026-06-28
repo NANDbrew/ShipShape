@@ -3,14 +3,14 @@ using HarmonyLib;
 using System.Reflection;
 
 
-namespace BoatDamageFix
+namespace ShipShape
 {
     [BepInPlugin(PLUGIN_ID, PLUGIN_NAME, PLUGIN_VERSION)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string PLUGIN_ID = "com.nandbrew.boatdamagefix";
-        public const string PLUGIN_NAME = "Boat Update Hack";
-        public const string PLUGIN_VERSION = "1.1.0";
+        public const string PLUGIN_ID = "com.nandbrew.shipshape";
+        public const string PLUGIN_NAME = "ShipShape";
+        public const string PLUGIN_VERSION = "1.2.0";
 
         //--settings--
         //internal ConfigEntry<bool> someSetting;

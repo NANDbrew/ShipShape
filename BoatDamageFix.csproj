@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{2B6609C2-66DB-4A3D-9684-0A4C9B342AEE}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>BoatDamageFix</RootNamespace>
-    <AssemblyName>BoatUpdateHack</AssemblyName>
+    <RootNamespace>ShipShape</RootNamespace>
+    <AssemblyName>ShipShape</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -93,6 +93,6 @@
     <Error Condition="!Exists('packages\BepInEx.Core.5.4.11\build\BepInEx.Core.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\BepInEx.Core.5.4.11\build\BepInEx.Core.targets'))" />
   </Target>
   <PropertyGroup>
-    <PostBuildEvent>xcopy /y "BoatUpdateHack.dll" "C:\Program Files (x86)\Steam\steamapps\common\Sailwind\BepInEx\plugins"</PostBuildEvent>
+    <PostBuildEvent>xcopy /y "ShipShape.dll" "C:\Program Files (x86)\Steam\steamapps\common\Sailwind\BepInEx\plugins"</PostBuildEvent>
   </PropertyGroup>
 </Project>
