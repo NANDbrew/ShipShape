@@ -94,5 +94,20 @@ namespace BoatDamageFix
             }
         }
 
+        [HarmonyPatch(typeof(BoatHorizon))]
+        private static class BoatHorizonPatch
+        {
+            [HarmonyPatch("Awake")]
+            [HarmonyPostfix]
+            public static void SomeMethodPatch(BoatHorizon __instance)
+            {
+                var horizonSwitcher = SaveLoadManager.instance.gameObject.GetComponent<BoatHorizonPerformanceSwitcher>();
+                if (!horizonSwitcher.horizons.Contains(__instance))
+                {
+                    Debug.Log("Adding " + __instance.transform.parent.name + " to BoatHorizonPerformanceSwitcher");
+                    horizonSwitcher.horizons = horizonSwitcher.horizons.AddToArray(__instance);
+                }
+            }
+        }
     }
 }
