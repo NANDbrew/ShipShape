@@ -10,14 +10,15 @@ namespace ShipShape
     {
         public const string PLUGIN_ID = "com.nandbrew.shipshape";
         public const string PLUGIN_NAME = "ShipShape";
-        public const string PLUGIN_VERSION = "1.2.0";
+        public const string PLUGIN_VERSION = "1.3.0";
 
         //--settings--
         //internal ConfigEntry<bool> someSetting;
-
+        //internal static Plugin instance;
 
         private void Awake()
         {
+            //instance = this;
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), PLUGIN_ID);
             //someSetting = Config.Bind("Settings", "Some setting", false);
         }

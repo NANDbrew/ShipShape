@@ -4,110 +4,171 @@ using UnityEngine;
 
 namespace ShipShape
 {
-    internal class Patches
+    [HarmonyPatch(typeof(BoatDamageWater), "Start")]
+    internal static class DamageWaterPatches
     {
         internal static Material damageMat;
         internal static AnimationCurve damageCurve;
 
-        [HarmonyPatch(typeof(BoatDamageWater))]
-        private static class SomeClassPatch
+        public static void Postfix(BoatDamageWater __instance)
         {
-            [HarmonyPatch("Start")]
-            [HarmonyPrefix]
-            public static void SomeMethodPatch(BoatDamageWater __instance)
+            // get reference material for damage overlay
+            if (!damageMat)
             {
-                if (!damageMat)
+                var dam = SaveLoadManager.instance.GetCurrentObjects()[10].GetComponentInChildren<HullDamageTexture>();
+                damageMat = dam.GetComponent<Renderer>().material;
+                damageCurve = dam.alphaCurve;
+            }
+
+
+            // add bailing button
+            if (__instance.GetComponent<BoatDamageWaterButton>() == null)
+            {
+                Debug.Log("ShipShape: adding bailing button for " + __instance.damage.name);
+
+                var col = __instance.gameObject.AddComponent<MeshCollider>();
+                col.convex = true;
+                col.isTrigger = true;
+                __instance.gameObject.AddComponent<BoatDamageWaterButton>();
+
+                var hull = __instance.damage.gameObject.GetComponent<SaveableObject>().GetCleanable().gameObject;
+                hull.SetActive(false);
+                var damageOverlay = GameObject.Instantiate(hull, hull.transform.parent);
+                hull.SetActive(true);
+                damageOverlay.name = "hull_damage_overlay";
+                damageOverlay.gameObject.layer = 2;
+                damageOverlay.GetComponent<Renderer>().material = damageMat;
+                Component.Destroy(damageOverlay.GetComponent<CleanableObject>());
+                Component.Destroy(damageOverlay.GetComponent<HullPlayerCollider>());
+                Component.Destroy(damageOverlay.GetComponent<Collider>());
+
+                var overlayComp = damageOverlay.AddComponent<HullDamageTexture>();
+                overlayComp.damage = __instance.damage;
+                overlayComp.alphaCurve = new AnimationCurve();
+                overlayComp.alphaCurve.AddKey(new Keyframe());
+                overlayComp.alphaCurve.AddKey(new Keyframe { time = 1, value = 1, inTangent = 2, outTangent = 2 });
+
+                damageOverlay.gameObject.SetActive(true);
+
+            }
+
+
+        }
+    }
+
+    [HarmonyPatch(typeof(BoatDamage), "Start")]
+    internal static class EmbarkColPatch
+    {
+        public static void Postfix(BoatDamage __instance, CapsuleCollider ___boatCol)
+        {
+            ___boatCol.gameObject.layer = 13;
+            BoatEmbarkCollider[] cols = __instance.transform.GetComponentsInChildren<BoatEmbarkCollider>();
+
+            if (cols.Length == 1)
+            {
+                var col2 = UnityEngine.GameObject.Instantiate(cols[0].gameObject, cols[0].transform.parent, false);
+                col2.tag = "EmbarkColPlayer";
+                col2.name += " (player)";
+                col2.transform.localScale *= 1.1f;
+                cols[0].walkCollider.tag = "WalkColBoat";
+            }
+
+            // set damage values
+            if (Mathf.Approximately(__instance.durabilityDays, 0))
+            {
+                Debug.Log("ShipShape: setting damage values for " + __instance.name);
+                float mass = __instance.GetComponent<Rigidbody>().mass;
+                float input = mass / 12 + 50;
+                if (input > 500)
                 {
-                    var dam = SaveLoadManager.instance.GetCurrentObjects()[10].GetComponentInChildren<HullDamageTexture>();
-                    damageMat = dam.GetComponent<Renderer>().material;
-                    damageCurve = dam.alphaCurve;
+                    input = mass / 30 + 300;
                 }
+                __instance.waterUnitsCapacity = Mathf.Round(input);
 
-                if (__instance.damage.durabilityDays == 0)
+                float days = Mathf.InverseLerp(60, 2000, mass / 20 + 50);
+                days = Mathf.Lerp(120, 60, days);
+                __instance.durabilityDays = Mathf.Round(days);
+                __instance.wearSteepness = 0.03f;
+                __instance.impactDamageMult = 0.014f;
+                __instance.minimumImpactVelocity = 1.5f;
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(BoatHorizon), "Awake")]
+    internal static class BoatHorizonPatch
+    {
+        public static void Postfix(BoatHorizon __instance)
+        {
+            var horizonSwitcher = SaveLoadManager.instance.gameObject.GetComponent<BoatHorizonPerformanceSwitcher>();
+            if (!horizonSwitcher.horizons.Contains(__instance))
+            {
+                Debug.Log("Adding " + __instance.transform.parent.name + " to BoatHorizonPerformanceSwitcher");
+                horizonSwitcher.horizons = horizonSwitcher.horizons.AddToArray(__instance);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Anchor), "Awake")]
+    internal static class AnchorPatch
+    {
+        static Transform shiftingWorld;
+
+        internal static void Prefix(Anchor __instance)
+        {
+
+            if (__instance.GetComponent<SaveableObject>() == null)
+            {
+                Debug.Log("ShipShape: Adding SaveableObject to " + __instance.name);
+
+                int index = __instance.GetComponent<ConfigurableJoint>().connectedBody.GetComponent<SaveableObject>().sceneIndex;
+                switch(index)
                 {
-                    float mass = __instance.damage.GetComponent<Rigidbody>().mass;
-                    float input = mass / 12 + 50;
-                    if (input > 500)
-                    {
-                        input = mass / 30 + 300;
-                    }
-                    __instance.damage.waterUnitsCapacity = Mathf.Round(input);
+                    case 182: // Hard code for Old Chronian boats due to lack of available indexes between them
+                        index = 204;
+                        break;
 
-                    float dur = Mathf.InverseLerp(60, 2000, mass / 20 + 50);
-                    dur = Mathf.Lerp(120, 60, dur);
-                    __instance.damage.durabilityDays = Mathf.Round(dur);
-                    __instance.damage.wearSteepness = 0.03f;
-                    __instance.damage.impactDamageMult = 0.014f;
-                    __instance.damage.minimumImpactVelocity = 1.5f;
+                    case 187: // Hard code for Old Chronian boats due to lack of available indexes between them
+                        index = 205;
+                        break;
+
+                    case 192: // Hard code for Old Chronian boats due to lack of available indexes between them
+                        index = 206;
+                        break;
+
+                    case 197: // Hard code for Old Chronian boats due to lack of available indexes between them
+                        index = 207;
+                        break;
+
+                    default:
+                        index += 6;
+                        break;
                 }
+                __instance.gameObject.SetActive(false);
 
-                if (__instance.GetComponent<BoatDamageWaterButton>() == null)
-                {
+                var saveable = __instance.gameObject.AddComponent<SaveableObject>();
+                saveable.anchor = __instance;
+                saveable.sceneIndex = index;
 
-                    var col = __instance.gameObject.AddComponent<MeshCollider>();
-                    col.isTrigger = true;
-                    col.convex = true;
-                    __instance.gameObject.AddComponent<BoatDamageWaterButton>();
-
-                    var hull = __instance.damage.gameObject.GetComponent<SaveableObject>().GetCleanable().gameObject;
-                    var damageOverlay = GameObject.Instantiate(hull, hull.transform.parent);
-                    damageOverlay.gameObject.layer = 2;
-                    damageOverlay.gameObject.SetActive(false);
-                    damageOverlay.GetComponent<Renderer>().material = damageMat;
-                    Component.Destroy(damageOverlay.GetComponent<CleanableObject>());
-                    Component.Destroy(damageOverlay.GetComponent<Collider>());
-                    Component.Destroy(damageOverlay.GetComponent<HullPlayerCollider>());
-
-                    var overlayComp = damageOverlay.AddComponent<HullDamageTexture>();
-                    overlayComp.damage = __instance.damage;
-                    //overlayComp.alphaCurve = damageCurve;
-                    overlayComp.alphaCurve = new AnimationCurve();
-                    overlayComp.alphaCurve.AddKey(new Keyframe());
-                    overlayComp.alphaCurve.AddKey(new Keyframe { time = 1, value = 1, inTangent = 2, outTangent = 2 });
-
-                    damageOverlay.gameObject.SetActive(true);
-
-                }
-
+                __instance.gameObject.SetActive(true);
+                Debug.Log("ShipShape: Added SaveableObject to " + __instance.name + ", with index " + saveable.sceneIndex);
 
             }
         }
 
-        [HarmonyPatch(typeof(BoatDamage))]
-        private static class EmbarkPatch
+        // Fix for Old Chronian anchors. Will also fix Jong Anchor if NANDFixes hasn't already
+        internal static void Postfix(Anchor __instance)
         {
-            [HarmonyPatch("Start")]
-            [HarmonyPostfix]
-            public static void SomeMethodPatch(BoatDamage __instance, CapsuleCollider ___boatCol)
+            if (__instance.transform.parent == null || (__instance.transform.parent != null && __instance.transform.parent.name != "_shifting world"))
             {
-                ___boatCol.gameObject.layer = 13;
-                BoatEmbarkCollider[] cols = __instance.transform.GetComponentsInChildren<BoatEmbarkCollider>();
-
-                if (cols.Length == 1)
+                if (shiftingWorld == null)
                 {
-                    var col2 = UnityEngine.GameObject.Instantiate(cols[0].gameObject, cols[0].transform.parent, false);
-                    col2.tag = "EmbarkColPlayer";
-                    col2.name += " (player)";
-                    col2.transform.localScale *= 1.1f;
-                    cols[0].walkCollider.tag = "WalkColBoat";
+                    shiftingWorld = GameObject.Find("_shifting world").transform;
                 }
-            }
-        }
-
-        [HarmonyPatch(typeof(BoatHorizon))]
-        private static class BoatHorizonPatch
-        {
-            [HarmonyPatch("Awake")]
-            [HarmonyPostfix]
-            public static void SomeMethodPatch(BoatHorizon __instance)
-            {
-                var horizonSwitcher = SaveLoadManager.instance.gameObject.GetComponent<BoatHorizonPerformanceSwitcher>();
-                if (!horizonSwitcher.horizons.Contains(__instance))
-                {
-                    Debug.Log("Adding " + __instance.transform.parent.name + " to BoatHorizonPerformanceSwitcher");
-                    horizonSwitcher.horizons = horizonSwitcher.horizons.AddToArray(__instance);
-                }
+                __instance.transform.parent = shiftingWorld;
+                Debug.Log("AnchorParent for " + __instance.name + " is " + __instance.transform.parent.name);
             }
         }
     }
 }
+
