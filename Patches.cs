@@ -98,12 +98,17 @@ namespace ShipShape
     [HarmonyPatch(typeof(BoatHorizon), "Awake")]
     internal static class BoatHorizonPatch
     {
-        public static void Postfix(BoatHorizon __instance)
+        public static void Postfix(BoatHorizon __instance, Rigidbody ___rigidbody)
         {
+            if (___rigidbody == null)
+            {
+                Debug.Log("BoatHorizon " + __instance.name + " has no rigidbody. Skipping");
+                return;
+            }
             var horizonSwitcher = SaveLoadManager.instance.gameObject.GetComponent<BoatHorizonPerformanceSwitcher>();
             if (!horizonSwitcher.horizons.Contains(__instance))
             {
-                Debug.Log("Adding " + __instance.transform.parent.name + " to BoatHorizonPerformanceSwitcher");
+                Debug.Log("Adding " + __instance.name + " to BoatHorizonPerformanceSwitcher");
                 horizonSwitcher.horizons = horizonSwitcher.horizons.AddToArray(__instance);
             }
         }
