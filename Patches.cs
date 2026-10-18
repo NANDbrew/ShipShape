@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using System;
 using System.Linq;
 using UnityEngine;
 
@@ -113,7 +114,18 @@ namespace ShipShape
             }
         }
     }
-
+    [HarmonyPatch(typeof(SaveLoadManager), "Awake")]
+    internal static class SaveLoadManagerPatch
+    {
+        public static void Postfix(ref SaveableObject[] ___currentObjects)
+        {
+            if (___currentObjects.Length < 1024)
+            {
+                Debug.Log("ShipShape: resizing array at SaveLoadManager.currentObjects");
+                Array.Resize(ref ___currentObjects, 1024);
+            }
+        }
+    }
     [HarmonyPatch(typeof(Anchor), "Awake")]
     internal static class AnchorPatch
     {
@@ -127,33 +139,12 @@ namespace ShipShape
                 Debug.Log("ShipShape: Adding SaveableObject to " + __instance.name);
 
                 int index = __instance.GetComponent<ConfigurableJoint>().connectedBody.GetComponent<SaveableObject>().sceneIndex;
-                switch(index)
-                {
-                    case 182: // Hard code for Old Chronian boats due to lack of available indexes between them
-                        index = 204;
-                        break;
 
-                    case 187: // Hard code for Old Chronian boats due to lack of available indexes between them
-                        index = 205;
-                        break;
-
-                    case 192: // Hard code for Old Chronian boats due to lack of available indexes between them
-                        index = 206;
-                        break;
-
-                    case 197: // Hard code for Old Chronian boats due to lack of available indexes between them
-                        index = 207;
-                        break;
-
-                    default:
-                        index += 6;
-                        break;
-                }
                 __instance.gameObject.SetActive(false);
 
                 var saveable = __instance.gameObject.AddComponent<SaveableObject>();
                 saveable.anchor = __instance;
-                saveable.sceneIndex = index;
+                saveable.sceneIndex = index + 512;
 
                 __instance.gameObject.SetActive(true);
                 Debug.Log("ShipShape: Added SaveableObject to " + __instance.name + ", with index " + saveable.sceneIndex);
