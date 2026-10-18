@@ -138,8 +138,12 @@ namespace ShipShape
             {
                 Debug.Log("ShipShape: Adding SaveableObject to " + __instance.name);
 
-                int index = __instance.GetComponent<ConfigurableJoint>().connectedBody.GetComponent<SaveableObject>().sceneIndex;
-
+                int index = __instance.GetComponent<ConfigurableJoint>().connectedBody.GetComponent<SaveableObject>().sceneIndex + 512;
+                if (SaveLoadManager.instance.GetCurrentObjects()[index] != null)
+                {
+                    Debug.LogError($"ShipShape: Cannot add SaveableObject; Index {index} is already occupied!");
+                    return;
+                }
                 __instance.gameObject.SetActive(false);
 
                 var saveable = __instance.gameObject.AddComponent<SaveableObject>();
