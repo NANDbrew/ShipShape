@@ -138,7 +138,7 @@ namespace ShipShape
             {
                 Debug.Log("ShipShape: Adding SaveableObject to " + __instance.name);
 
-                int index = __instance.GetComponent<ConfigurableJoint>().connectedBody.GetComponent<SaveableObject>().sceneIndex + 512;
+                int index = __instance.GetComponent<ConfigurableJoint>().connectedBody.GetComponent<SaveableObject>().sceneIndex;
                 if (SaveLoadManager.instance.GetCurrentObjects()[index] != null)
                 {
                     Debug.LogError($"ShipShape: Cannot add SaveableObject; Index {index} is already occupied!");
@@ -166,7 +166,7 @@ namespace ShipShape
                     shiftingWorld = GameObject.Find("_shifting world").transform;
                 }
                 __instance.transform.parent = shiftingWorld;
-                Debug.Log("AnchorParent for " + __instance.name + " is " + __instance.transform.parent.name);
+                Debug.Log("AnchorParent for " + __instance.name + " is now " + __instance.transform.parent.name);
             }
         }
     }

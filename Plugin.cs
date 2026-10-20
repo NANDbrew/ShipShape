@@ -10,7 +10,7 @@ namespace ShipShape
     {
         public const string PLUGIN_ID = "com.nandbrew.shipshape";
         public const string PLUGIN_NAME = "ShipShape";
-        public const string PLUGIN_VERSION = "1.4.0";
+        public const string PLUGIN_VERSION = "1.4.1";
 
         //--settings--
         //internal ConfigEntry<bool> someSetting;
